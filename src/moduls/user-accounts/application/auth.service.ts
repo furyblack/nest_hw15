@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { UsersRepository } from '../infrastructure/users.repository';
 import { CryptoService } from './crypto.service';
 import { UserContextDto } from '../guards/dto/user.context.dto';
@@ -37,11 +37,34 @@ export class AuthService {
     return { id: user.id.toString() };
   }
 
-  async login(userId: string) {
-    const accessToken = this.jwtService.sign({ id: userId } as UserContextDto);
+  // Генерация accessToken
+  private generateAccessToken(userId: string, login: string): string {
+    return this.jwtService.sign(
+      { id: userId, login },
+      { expiresIn: '15m' }, // accessToken действует 15 минут
+    );
+  }
 
+  // Генерация refreshToken
+  private generateRefreshToken(userId: string, login: string): string {
+    return this.jwtService.sign(
+      { id: userId, login },
+      { expiresIn: '7d' }, // refreshToken действует 7 дней
+    );
+  }
+
+  async login(
+    userId: string,
+  ): Promise<{ accessToken: string; refreshToken: string }> {
+    const user = await this.usersRepository.findById(userId);
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+    const accessToken = this.generateAccessToken(userId, user.login);
+    const refreshToken = this.generateRefreshToken(userId, user.login);
     return {
       accessToken,
+      refreshToken,
     };
   }
   async confirmRegistration(code: string): Promise<void> {

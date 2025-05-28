@@ -13,6 +13,11 @@ import { CryptoService } from './application/crypto.service';
 import { JwtModule } from '@nestjs/jwt';
 import { JwtStrategy } from './guards/bearer/jwt.strategy';
 import { AuthQueryRepository } from './infrastructure/query/auth.query-repository';
+import { CreateUserUseCase } from './use-cases/create-user-use-case';
+import { RegisterUserUseCase } from './use-cases/register-user-use-case';
+import { DeleteUserUseCase } from './use-cases/delete-user-use-case';
+import { SecurityDevicesController } from './api/security-devices.controller';
+import { SecurityDevicesQueryRepository } from './infrastructure/query/security-devices.query-repository';
 
 @Module({
   imports: [
@@ -23,17 +28,22 @@ import { AuthQueryRepository } from './infrastructure/query/auth.query-repositor
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
     NotificationsModule,
   ],
-  controllers: [UsersController, AuthController],
+  controllers: [UsersController, AuthController, SecurityDevicesController],
   providers: [
     UsersService,
     UsersRepository,
     UsersQueryRepository,
+    SecurityDevicesQueryRepository,
     AuthService,
     AuthQueryRepository,
     LocalStrategy,
     CryptoService,
     JwtStrategy,
+    CreateUserUseCase,
+    RegisterUserUseCase,
+    DeleteUserUseCase,
   ],
+
   exports: [
     UsersRepository,
     MongooseModule,

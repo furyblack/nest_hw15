@@ -1,13 +1,15 @@
+import { UsersService } from '../application/users.service';
 import {
   Body,
   Controller,
-  Post,
-  UseGuards,
   Get,
   HttpCode,
   HttpStatus,
+  Post,
+  Res,
+  UseGuards,
 } from '@nestjs/common';
-import { UsersService } from '../application/users.service';
+import { Response } from 'express'; // Импортируем Response из express
 import { CreateUserInputDto } from './input-dto/users.input-dto';
 import { LocalAuthGuard } from '../guards/local/local-auth.guard';
 import { AuthService } from '../application/auth.service';
@@ -41,10 +43,21 @@ export class AuthController {
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @UseGuards(LocalAuthGuard)
-  login(
+  async login(
     @ExtractUserFromRequest() user: UserContextDto,
+    @Res({ passthrough: true }) response: Response, // Используем @Res для установки cookie
   ): Promise<{ accessToken: string }> {
-    return this.authService.login(user.id);
+    const { accessToken, refreshToken } = await this.authService.login(user.id);
+
+    // Устанавливаем refreshToken в cookie
+    response.cookie('refreshToken', refreshToken, {
+      httpOnly: true, // Защита от XSS
+      secure: true, // В production используем HTTPS
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 дней
+    });
+
+    // Возвращаем accessToken в теле ответа
+    return { accessToken };
   }
 
   @ApiBearerAuth()

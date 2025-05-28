@@ -9,6 +9,7 @@ import {
   Post,
   Put,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { CreateBlogDomainDto } from '../domain/dto/create-blog.domain.dto';
 import { BlogsViewDto } from '../dto/view-dto/blogs.view-dto';
@@ -22,6 +23,8 @@ import { PostsViewDto } from '../../posts/dto/posts.view-dto';
 import { PostsService } from '../../posts/application/posts.service';
 import { PostsQueryRepository } from '../../posts/infrastructure/posts.query-repository';
 import { GetPostsQueryParams } from '../../posts/api/get.posts.query.params';
+import { JwtOptionalAuthGuard } from '../../../user-accounts/guards/bearer/jwt-optional-auth.guard';
+import { BasicAuthGuard } from '../../../user-accounts/guards/basic/basic-auth.guard';
 
 @Controller('blogs')
 export class BlogsController {
@@ -45,6 +48,7 @@ export class BlogsController {
   }
 
   @Get(':id/posts')
+  @UseGuards(JwtOptionalAuthGuard)
   async getPostsForBlog(
     @Param('id') blogId: string,
     @Query() query: GetPostsQueryParams,
@@ -53,12 +57,14 @@ export class BlogsController {
   }
 
   @Post()
+  @UseGuards(BasicAuthGuard)
   async createBlog(@Body() body: CreateBlogDomainDto): Promise<BlogsViewDto> {
     const blogId = await this.blogService.createBlog(body);
     return this.blogQueryRepository.getByIdOrNotFoundFail(blogId);
   }
 
   @Post(':id/posts')
+  @UseGuards(BasicAuthGuard)
   async createPostForBlog(
     @Param('id') blogId: string,
     @Body() body: CreatePostDomainDto,
@@ -68,12 +74,14 @@ export class BlogsController {
   }
 
   @Delete(':id')
+  @UseGuards(BasicAuthGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteBlog(@Param('id') id: string): Promise<void> {
     await this.blogService.deleteBlog(id);
   }
 
   @Put(':id')
+  @UseGuards(BasicAuthGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
   async updateBlog(
     @Param('id') id: string,

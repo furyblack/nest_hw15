@@ -23,6 +23,14 @@ export class UsersRepository {
   async save(user: UserDocument) {
     await user.save();
   }
+  async createUser(userData: {
+    email: string;
+    login: string;
+    passwordHash: string;
+  }): Promise<UserDocument> {
+    const user = new this.UserModel(userData);
+    return user.save();
+  }
 
   async findOrNotFoundFail(id: Types.ObjectId): Promise<UserDocument> {
     const user = await this.findById(id.toString());
