@@ -1,4 +1,5 @@
 import { PostDocument } from '../domain/post.entity';
+import { LikeStatusType } from '../likes/likes-types/likes-types';
 
 export enum MyStatus {
   None = 'None',
@@ -17,31 +18,32 @@ export class PostsViewDto {
   extendedLikesInfo: {
     likesCount: number;
     dislikesCount: number;
-    myStatus: string;
+    myStatus: LikeStatusType; // Используем LikeStatusType
     newestLikes: {
-      addedAt: string;
+      addedAt: Date;
       userId: string;
       login: string;
     }[];
   };
-  static mapToView(
-    post: PostDocument,
-    myStatus: MyStatus = MyStatus.None,
-  ): PostsViewDto {
-    const dto = new PostsViewDto();
-    dto.id = post.id;
-    dto.title = post.title;
-    dto.shortDescription = post.shortDescription;
-    dto.content = post.content;
-    dto.blogId = post.blogId;
-    dto.blogName = post.blogName;
-    dto.createdAt = post.createdAt;
-    dto.extendedLikesInfo = {
-      likesCount: post.likesCount,
-      dislikesCount: post.dislikesCount,
-      myStatus: myStatus,
-      newestLikes: post.newestLikes,
+  static mapToView(post: PostDocument, myStatus: LikeStatusType): PostsViewDto {
+    return {
+      id: post._id.toString(), // Используем post._id, так как Mongoose хранит ID в _id
+      title: post.title,
+      shortDescription: post.shortDescription,
+      content: post.content,
+      blogId: post.blogId,
+      blogName: post.blogName,
+      createdAt: post.createdAt,
+      extendedLikesInfo: {
+        likesCount: post.likesCount,
+        dislikesCount: post.dislikesCount,
+        myStatus, // Используем переданный myStatus
+        newestLikes: post.newestLikes.map((like) => ({
+          addedAt: new Date(like.addedAt),
+          userId: like.userId,
+          login: like.login,
+        })),
+      },
     };
-    return dto;
   }
 }

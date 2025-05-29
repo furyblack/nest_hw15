@@ -2,11 +2,13 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Post, PostModelType } from '../domain/post.entity';
 import { Blog, BlogModelType } from '../../blogs/domain/blog.entity';
-import { FilterQuery } from 'mongoose';
+import { FilterQuery, Model } from 'mongoose';
 import { PostsViewDto } from '../dto/posts.view-dto';
 import { DeletionStatus } from '../../../user-accounts/domain/user.entity';
 import { GetPostsQueryParams } from '../api/get.posts.query.params';
 import { PaginatedViewDto } from '../../../../core/dto/base.paginated.view-dto';
+import { LikeStatusType } from '../likes/likes-types/likes-types';
+import { PostLike, PostLikeDocument } from '../likes/like-model';
 
 @Injectable()
 export class PostsQueryRepository {
@@ -15,9 +17,14 @@ export class PostsQueryRepository {
     private postModel: PostModelType,
     @InjectModel(Blog.name)
     private blogModel: BlogModelType,
+    @InjectModel(PostLike.name)
+    private postLikeModel: Model<PostLikeDocument>,
   ) {}
 
-  async getByIdOrNotFoundFail(id: string): Promise<PostsViewDto> {
+  async getByIdOrNotFoundFail(
+    id: string,
+    userId?: string,
+  ): Promise<PostsViewDto> {
     const post = await this.postModel.findOne({
       _id: id,
       deletionStatus: { $ne: DeletionStatus.PermanentDeleted },
@@ -26,10 +33,21 @@ export class PostsQueryRepository {
       throw new NotFoundException('post not found');
     }
 
-    return PostsViewDto.mapToView(post);
+    let myStatus: LikeStatusType = 'None';
+
+    if (userId) {
+      const userLike = await this.postLikeModel.findOne({ postId: id, userId });
+      if (userLike) {
+        myStatus = userLike.status;
+      }
+    }
+
+    return PostsViewDto.mapToView(post, myStatus);
   }
+
   async getAllPosts(
     query: GetPostsQueryParams,
+    userId?: string, // Добавляем userId как необязательный параметр
   ): Promise<PaginatedViewDto<PostsViewDto[]>> {
     const filter: FilterQuery<Post> = {
       deletionStatus: DeletionStatus.NotDeleted,
@@ -50,7 +68,21 @@ export class PostsQueryRepository {
 
     const totalCount = await this.postModel.countDocuments(filter);
 
-    const items = posts.map((p) => PostsViewDto.mapToView(p));
+    const items = await Promise.all(
+      posts.map(async (p) => {
+        let myStatus: LikeStatusType = 'None';
+        if (userId) {
+          const userLike = await this.postLikeModel.findOne({
+            postId: p._id.toString(),
+            userId,
+          });
+          if (userLike) {
+            myStatus = userLike.status;
+          }
+        }
+        return PostsViewDto.mapToView(p, myStatus);
+      }),
+    );
 
     return PaginatedViewDto.mapToView({
       items,
@@ -63,6 +95,7 @@ export class PostsQueryRepository {
   async getAllPostsForBlog(
     blogId: string,
     query: GetPostsQueryParams,
+    userId?: string, // Добавляем userId как необязательный параметр
   ): Promise<PaginatedViewDto<PostsViewDto[]>> {
     const blogExists = await this.blogModel.exists({
       _id: blogId,
@@ -92,7 +125,21 @@ export class PostsQueryRepository {
 
     const totalCount = await this.postModel.countDocuments(filter);
 
-    const items = posts.map((p) => PostsViewDto.mapToView(p));
+    const items = await Promise.all(
+      posts.map(async (p) => {
+        let myStatus: LikeStatusType = 'None';
+        if (userId) {
+          const userLike = await this.postLikeModel.findOne({
+            postId: p._id.toString(),
+            userId,
+          });
+          if (userLike) {
+            myStatus = userLike.status;
+          }
+        }
+        return PostsViewDto.mapToView(p, myStatus);
+      }),
+    );
 
     return PaginatedViewDto.mapToView({
       items,
