@@ -18,6 +18,7 @@ export class BlogsQueryRepository {
       _id: id,
       deletionStatus: { $ne: DeletionStatus.PermanentDeleted },
     });
+
     if (!blog) {
       throw new NotFoundException('blog not found');
     }

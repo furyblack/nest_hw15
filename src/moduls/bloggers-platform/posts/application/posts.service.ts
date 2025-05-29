@@ -5,9 +5,9 @@ import { PostsRepository } from '../infrastructure/posts-repository';
 import { Blog, BlogModelType } from '../../blogs/domain/blog.entity';
 import { DeletionStatus } from '../../../user-accounts/domain/user.entity';
 import {
-  CreatePostDomainDto,
   CreatePostDto,
-  UpdatePostDto,
+  CreatePostForBlogInputDto,
+  UpdatePostForMethod,
 } from '../dto/posts.dto';
 import {
   LikeStatusEnum,
@@ -34,7 +34,7 @@ export class PostsService {
       _id: dto.blogId,
       deletionStatus: DeletionStatus.NotDeleted,
     });
-
+    console.log('Found blog:', blog);
     if (!blog) {
       throw new NotFoundException('Blog not found');
     }
@@ -51,7 +51,7 @@ export class PostsService {
 
   async createPostForBlog(
     blogId: string,
-    dto: CreatePostDomainDto,
+    dto: CreatePostForBlogInputDto,
   ): Promise<string> {
     const blogExists = await this.blogModel.exists({
       _id: blogId,
@@ -79,7 +79,7 @@ export class PostsService {
     post.makeDeleted();
     await this.postRepository.save(post);
   }
-  async updatePost(id: string, dto: UpdatePostDto): Promise<string> {
+  async updatePost(id: string, dto: UpdatePostForMethod): Promise<string> {
     const post = await this.postRepository.findOrNotFoundFail(id);
     post.update(dto);
     await this.postRepository.save(post);

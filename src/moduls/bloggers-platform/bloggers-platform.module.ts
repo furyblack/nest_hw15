@@ -11,6 +11,7 @@ import { PostsQueryRepository } from './posts/infrastructure/posts.query-reposit
 import { PostsRepository } from './posts/infrastructure/posts-repository';
 import { PostsController } from './posts/api/posts.controller';
 import { PostLike, PostLikeSchema } from './posts/likes/like-model';
+import { BlogIsExistConstraint } from './blogs/decorators/blog-is-existing';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { PostLike, PostLikeSchema } from './posts/likes/like-model';
     PostsService,
     PostsQueryRepository,
     PostsRepository,
+    BlogIsExistConstraint,
   ],
   exports: [MongooseModule],
 })

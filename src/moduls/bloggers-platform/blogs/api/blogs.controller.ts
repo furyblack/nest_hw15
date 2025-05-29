@@ -18,13 +18,14 @@ import { PaginatedViewDto } from '../../../../core/dto/base.paginated.view-dto';
 import { BlogsQueryRepository } from '../infrastructure/query/blogs.query-repository';
 import { BlogsService } from '../application/blogs.service';
 import { UpdateBlogInputDto } from './input-dto/update-blog.input-dto';
-import { CreatePostDomainDto } from '../../posts/dto/posts.dto';
+import { CreatePostForBlogInputDto } from '../../posts/dto/posts.dto';
 import { PostsViewDto } from '../../posts/dto/posts.view-dto';
 import { PostsService } from '../../posts/application/posts.service';
 import { PostsQueryRepository } from '../../posts/infrastructure/posts.query-repository';
 import { GetPostsQueryParams } from '../../posts/api/get.posts.query.params';
 import { JwtOptionalAuthGuard } from '../../../user-accounts/guards/bearer/jwt-optional-auth.guard';
 import { BasicAuthGuard } from '../../../user-accounts/guards/basic/basic-auth.guard';
+import { CurrentUser } from '../../../user-accounts/decarators/user-decorators';
 
 @Controller('blogs')
 export class BlogsController {
@@ -51,9 +52,10 @@ export class BlogsController {
   @UseGuards(JwtOptionalAuthGuard)
   async getPostsForBlog(
     @Param('id') blogId: string,
+    @CurrentUser() userId: string,
     @Query() query: GetPostsQueryParams,
   ): Promise<PaginatedViewDto<PostsViewDto[]>> {
-    return this.postQueryRepository.getAllPostsForBlog(blogId, query);
+    return this.postQueryRepository.getAllPostsForBlog(blogId, query, userId);
   }
 
   @Post()
@@ -67,7 +69,7 @@ export class BlogsController {
   @UseGuards(BasicAuthGuard)
   async createPostForBlog(
     @Param('id') blogId: string,
-    @Body() body: CreatePostDomainDto,
+    @Body() body: CreatePostForBlogInputDto,
   ): Promise<PostsViewDto> {
     const postId = await this.postsService.createPostForBlog(blogId, body);
     return this.postQueryRepository.getByIdOrNotFoundFail(postId);

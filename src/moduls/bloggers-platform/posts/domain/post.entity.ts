@@ -1,7 +1,10 @@
 import { HydratedDocument, Model } from 'mongoose';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { DeletionStatus } from '../../../user-accounts/domain/user.entity';
-import { CreatePostDomainDto } from '../dto/posts.dto';
+import {
+  CreatePostForBlogInputDto,
+  CreatePostInputDto,
+} from '../dto/posts.dto';
 
 type newestLikes = {
   addedAt: string;
@@ -30,7 +33,9 @@ export class Post {
   @Prop({ enum: DeletionStatus, default: DeletionStatus.NotDeleted })
   deletionStatus: DeletionStatus;
 
-  static createInstance(dto: CreatePostDomainDto): PostDocument {
+  static createInstance(
+    dto: CreatePostInputDto & { blogName: string },
+  ): PostDocument {
     const post = new this();
     post.title = dto.title;
     post.content = dto.content;
@@ -51,7 +56,7 @@ export class Post {
     }
     this.deletionStatus = DeletionStatus.PermanentDeleted;
   }
-  update(dto: CreatePostDomainDto) {
+  update(dto: CreatePostForBlogInputDto) {
     this.title = dto.title;
     this.content = dto.content;
     this.shortDescription = dto.shortDescription;

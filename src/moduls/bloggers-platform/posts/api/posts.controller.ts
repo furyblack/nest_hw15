@@ -13,7 +13,7 @@ import {
 } from '@nestjs/common';
 import { PostsQueryRepository } from '../infrastructure/posts.query-repository';
 import { PostsService } from '../application/posts.service';
-import { CreatePostDomainDto, UpdatePostDto } from '../dto/posts.dto';
+import { CreatePostInputDto, UpdatePostDto } from '../dto/posts.dto';
 import { PostsViewDto } from '../dto/posts.view-dto';
 import { GetPostsQueryParams } from './get.posts.query.params';
 import { PaginatedViewDto } from '../../../../core/dto/base.paginated.view-dto';
@@ -31,8 +31,11 @@ export class PostsController {
   ) {}
   @Post()
   @UseGuards(BasicAuthGuard)
-  async createPost(@Body() body: CreatePostDomainDto): Promise<PostsViewDto> {
+  async createPost(@Body() body: CreatePostInputDto): Promise<PostsViewDto> {
+    console.log('--- Controller: createPost called ---');
+    console.log('Body:', body);
     const postId = await this.postService.createPost(body);
+    console.log('Created post with ID:', postId);
     return this.postQueryRepository.getByIdOrNotFoundFail(postId);
   }
 
@@ -40,12 +43,17 @@ export class PostsController {
   @UseGuards(JwtOptionalAuthGuard)
   async getAllPosts(
     @Query() query: GetPostsQueryParams,
+    @CurrentUser() userId?: string,
   ): Promise<PaginatedViewDto<PostsViewDto[]>> {
-    return this.postQueryRepository.getAllPosts(query);
+    return this.postQueryRepository.getAllPosts(query, userId);
   }
   @Get(':id')
-  async getById(@Param('id') id: string): Promise<PostsViewDto> {
-    return this.postQueryRepository.getByIdOrNotFoundFail(id);
+  @UseGuards(JwtOptionalAuthGuard)
+  async getById(
+    @Param('id') id: string,
+    @CurrentUser() userId?: string,
+  ): Promise<PostsViewDto> {
+    return this.postQueryRepository.getByIdOrNotFoundFail(id, userId);
   }
   @Delete(':id')
   @UseGuards(BasicAuthGuard)
