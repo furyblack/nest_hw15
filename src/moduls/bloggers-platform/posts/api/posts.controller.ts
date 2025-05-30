@@ -22,21 +22,37 @@ import { JwtOptionalAuthGuard } from '../../../user-accounts/guards/bearer/jwt-o
 import { JwtAuthGuard } from '../../../user-accounts/guards/bearer/jwt-auth.guard';
 import { LikeToPostModel } from '../likes/like-model';
 import { CurrentUser } from '../../../user-accounts/decarators/user-decorators';
+import { CommentInputDto } from '../../comments/dto/comment-input-dto';
+import { CommentsViewDto } from '../../comments/dto/comment-output-type';
+import { CommentsService } from '../../comments/application/comments.service';
+import { CommentsQueryRepository } from '../../comments/infrastructure/query/comments.query-repository';
+import { GetCommentsQueryParams } from '../../comments/dto/get-comments-query-params.input-dto';
 
 @Controller('posts')
 export class PostsController {
   constructor(
     private postQueryRepository: PostsQueryRepository,
     private postService: PostsService,
+    private commentsService: CommentsService,
+    private commentQueryRepository: CommentsQueryRepository,
   ) {}
   @Post()
   @UseGuards(BasicAuthGuard)
   async createPost(@Body() body: CreatePostInputDto): Promise<PostsViewDto> {
-    console.log('--- Controller: createPost called ---');
-    console.log('Body:', body);
     const postId = await this.postService.createPost(body);
-    console.log('Created post with ID:', postId);
     return this.postQueryRepository.getByIdOrNotFoundFail(postId);
+  }
+
+  @Post(':id/comments')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.CREATED)
+  async createComment(
+    @Param('id') postId: string,
+    @Body() dto: CommentInputDto,
+    @CurrentUser() userId: string,
+    @CurrentUser('login') userLogin: string,
+  ): Promise<CommentsViewDto> {
+    return this.commentsService.createComment(postId, userId, userLogin, dto);
   }
 
   @Get()
@@ -55,6 +71,20 @@ export class PostsController {
   ): Promise<PostsViewDto> {
     return this.postQueryRepository.getByIdOrNotFoundFail(id, userId);
   }
+  @Get(':id/comments')
+  @UseGuards(JwtOptionalAuthGuard)
+  async getCommentForPost(
+    @Param('id') postId: string,
+    @Query() query: GetCommentsQueryParams,
+    @CurrentUser() userId?: string,
+  ): Promise<PaginatedViewDto<CommentsViewDto[]>> {
+    return this.commentQueryRepository.getCommentsForPost(
+      postId,
+      query,
+      userId,
+    );
+  }
+
   @Delete(':id')
   @UseGuards(BasicAuthGuard)
   @HttpCode(HttpStatus.NO_CONTENT)

@@ -12,16 +12,27 @@ import { PostsRepository } from './posts/infrastructure/posts-repository';
 import { PostsController } from './posts/api/posts.controller';
 import { PostLike, PostLikeSchema } from './posts/likes/like-model';
 import { BlogIsExistConstraint } from './blogs/decorators/blog-is-existing';
+import {
+  CommentLikeModel,
+  CommentLikeSchema,
+} from './comments/likes/likes-model-for-comments';
+import { Comment, CommentSchema } from './comments/domain/comment.entity';
+import { CommentsService } from './comments/application/comments.service';
+import { CommentsRepository } from './comments/infrastructure/comments-repository';
+import { CommentsQueryRepository } from './comments/infrastructure/query/comments.query-repository';
+import { CommentsController } from './comments/api/comments.controller';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: Blog.name, schema: BlogSchema },
       { name: Post.name, schema: PostSchema },
+      { name: Comment.name, schema: CommentSchema },
       { name: PostLike.name, schema: PostLikeSchema },
+      { name: CommentLikeModel.name, schema: CommentLikeSchema },
     ]),
   ],
-  controllers: [BlogsController, PostsController],
+  controllers: [BlogsController, PostsController, CommentsController],
   providers: [
     BlogsService,
     BlogsQueryRepository,
@@ -30,6 +41,9 @@ import { BlogIsExistConstraint } from './blogs/decorators/blog-is-existing';
     PostsQueryRepository,
     PostsRepository,
     BlogIsExistConstraint,
+    CommentsService,
+    CommentsRepository,
+    CommentsQueryRepository,
   ],
   exports: [MongooseModule],
 })
