@@ -1,6 +1,6 @@
 import { InjectModel } from '@nestjs/mongoose';
 import { Post, PostModelType } from '../domain/post.entity';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PostsRepository } from '../infrastructure/posts-repository';
 import { Blog, BlogModelType } from '../../blogs/domain/blog.entity';
 import { DeletionStatus } from '../../../user-accounts/domain/user.entity';
@@ -19,6 +19,7 @@ import { LikeStatusType } from '../likes/likes-types/likes-types';
 
 @Injectable()
 export class PostsService {
+  private readonly logger = new Logger(PostsService.name);
   constructor(
     @InjectModel(Post.name)
     private postModel: PostModelType,
@@ -75,9 +76,14 @@ export class PostsService {
   }
 
   async deletePost(id: string) {
-    const post = await this.postRepository.findOrNotFoundFail(id);
-    post.makeDeleted();
-    await this.postRepository.save(post);
+    try {
+      const post = await this.postRepository.findOrNotFoundFail(id);
+      post.makeDeleted();
+      await this.postRepository.save(post);
+    } catch (error) {
+      this.logger.error(`error deleting post: ${error.message}`);
+      throw error;
+    }
   }
   async updatePost(id: string, dto: UpdatePostForMethod): Promise<string> {
     const post = await this.postRepository.findOrNotFoundFail(id);
