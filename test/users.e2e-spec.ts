@@ -22,6 +22,7 @@ describe('users', () => {
         }),
       );
     });
+
     app = result.app;
     userTestManger = result.userTestManger;
   });

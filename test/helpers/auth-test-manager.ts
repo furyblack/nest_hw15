@@ -1,23 +1,59 @@
 import { HttpStatus, INestApplication } from '@nestjs/common';
-import { CreateUserDto } from '../../src/moduls/user-accounts/dto/create-user.dto';
-
 import request from 'supertest';
-import { UserViewDto } from '../../src/moduls/user-accounts/api/view-dto/user.view-dto';
+import { CreateUserDto } from '../../src/moduls/user-accounts/dto/create-user.dto';
+import { EmailService } from '../../src/moduls/notifications/email.service';
 
 export class AuthTestManager {
   constructor(
     private app: INestApplication,
-    // private readonly userTestManager: UsersTestManager,
+    private emailService: EmailService,
   ) {}
 
   async registerUser(
     registerModel: CreateUserDto,
-    statusCode: number = HttpStatus.CREATED,
-  ): Promise<UserViewDto> {
-    const response = await request(this.app.getHttpServer())
+    expectedStatus: number = HttpStatus.NO_CONTENT,
+  ): Promise<void> {
+    // Мокаем без resolvedValue(true), если сервис ожидает void
+    jest
+      .spyOn(this.emailService, 'sendConfirmationEmail')
+      .mockImplementation(() => Promise.resolve());
+
+    await request(this.app.getHttpServer())
       .post('/api/auth/registration')
       .send(registerModel)
-      .expect(statusCode);
-    return response.body;
+      .expect(expectedStatus);
+  }
+
+  async login(
+    credentials: { loginOrEmail: string; password: string },
+    expectedStatus: number = HttpStatus.OK,
+  ): Promise<{ accessToken: string; refreshToken?: string }> {
+    const response = await request(this.app.getHttpServer())
+      .post('/api/auth/login')
+      .send({
+        loginOrEmail: credentials.loginOrEmail,
+        password: credentials.password,
+      })
+      .expect(expectedStatus);
+
+    const refreshToken = this.extractRefreshToken(response);
+    return {
+      accessToken: response.body?.accessToken,
+      refreshToken,
+    };
+  }
+
+  async getMe(accessToken: string, expectedStatus: number = HttpStatus.OK) {
+    return request(this.app.getHttpServer())
+      .get('/api/auth/me')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(expectedStatus);
+  }
+
+  private extractRefreshToken(response: request.Response): string | undefined {
+    const cookieHeader = response.headers['set-cookie']?.[0];
+    if (!cookieHeader) return undefined;
+
+    return cookieHeader.split(';')[0].split('=')[1];
   }
 }

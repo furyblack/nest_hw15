@@ -14,6 +14,7 @@ export class BlogsTestManager {
     const response = await request(this.app.getHttpServer())
       .post('/api/blogs')
       .send(createModel)
+      .auth('admin', 'qwerty')
       .expect(statusCode);
     return response.body;
   }
@@ -35,12 +36,16 @@ export class BlogsTestManager {
   }
   async deleteBlog(blogId: string): Promise<void> {
     const server = this.app.getHttpServer();
-    await request(server).delete(`/api/blogs/${blogId}`).expect(204);
+    await request(server)
+      .delete(`/api/blogs/${blogId}`)
+      .set('Authorization', 'Basic YWRtaW46cXdlcnR5')
+      .expect(204);
   }
 
   async updateBlog(blogId: string, updateBody: UpdateBlogDto): Promise<void> {
     await request(this.app.getHttpServer())
       .put(`/api/blogs/${blogId}`)
+      .set('Authorization', 'Basic YWRtaW46cXdlcnR5')
       .send(updateBody)
       .expect(HttpStatus.NO_CONTENT);
   }
